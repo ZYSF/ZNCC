@@ -20,7 +20,7 @@ The compiler mostly targets modern, 64-bit platforms and focuses on converting s
     * Linux targets should also work for FreeBSD/OpenBSD/Solaris/etc. with minimal re-tooling (macOS may require a little more work, but not much)
     * Also includes some minimal/experimental support for other/new architectures
 * Single compiler tool supports multiple targets (no need for per-architecture compiler builds)
-* Compiler is self-hosting (at least on sup
+* Compiler is self-hosting (at least on fully-supported targets)
 * Supports most (not all) essential C features with some extensions
     * Includes some Objective C-like OOP extensions
     * Basic floating-point support is included (assuming the target has such support)
