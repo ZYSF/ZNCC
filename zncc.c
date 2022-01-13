@@ -10,9 +10,9 @@
 
 //#include "compile.h"
 #define CCB_IMPLEMENTATION
-#include "ccb.h"
+#include "zncp.h"
 #define CCBGENERIC_IMPLEMENTATION
-#include "ccbgeneric.h"
+#include "zncg.h"
 #ifdef TOOL_CPP
 #define CPP_IMPLEMENTATION
 #include "cpp.h"
