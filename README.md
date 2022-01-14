@@ -11,6 +11,59 @@ This is NOT meant to be a full replacement for standards-compliant C/C++ compile
 
 The compiler mostly targets modern, 64-bit platforms and focuses on converting simple pre-processed C-like code into simple assembler code for the target architecture. It can be easily adapted for other use-cases or bundled with additional tools.
 
+## Building & Usage
+
+### Command-Line Build (Linux/Unix/bash/...)
+
+Using your host C compiler:
+
+    cc -ozncc zncc.c
+
+Using your host C compiler:
+
+    cc -ozncc zncc.c
+
+### Visual Studio IDE Build (Windows)
+
+ 1. Create a new C++ Command Line project
+ 2. Copy/paste the zncc.c code into your main `.c++` file
+ 3. Rename your main `.c++` file to `zncc.c` (or something else with a `.c` ending)
+ 4. Create new header files, `zncp.h` and `zncg.h`, copying/pasting the associated code in
+ 5. Build/run and enjoy!
+
+NOTE: This trick generally works for getting simple C programs working in Visual Studio, which doesn't seem to be configured well for C programming by default.
+
+### Basic Usage
+
+The compiler takes as input C-like program code (without any preprocessor directives) and generates as output assembler code.
+
+For easy testing with files, the `--input` and `--output` arguments can be given:
+
+    ./zncc --input mycode.c --output mycode.s
+
+The assembler code then needs to be assembled/linked (see beneath).
+
+### Extended Usage/Testing/Self-Hosting (Linux/Unix Only)
+
+First build the compiler as above. Then download the ZNLC headers, you can place these anywhere convenient (e.g.including in the compiler directory).
+
+Then, create a preprocessed version using GCC's frontend or another preprocessor (NOTE: This differs a little between platforms):
+
+    gcc -E -Ipath/to/ZNLC/include -D_ZCC -D_ZCC_X64 zncc.c > zncc.X64.c
+
+If this succeeds, `zncc.X64.c` should be the raw, preprocessed C code for the appropriate target. The next step is to run the compiler, producing assembly code:
+
+    ./zncc --input zncc.X64.c --output zncc.X64.s
+
+Then you can assemble & link, again GCC's frontend comes in handy on Linux:
+
+    gcc -static -ozncc.X64 zncc.X64.s
+
+This will produce the self-hosted version `zncc.X64`, which you can test by compiling itself as above:
+
+    ./zncc.X64 --input zncc.X64.c --output zncc.X64.again.s
+    gcc -static -ozncc.X64.again zncc.X64.again.s
+
 ## Features
 
 * Supports multiple architectures and is easy to retarget
