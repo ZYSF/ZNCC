@@ -84,7 +84,7 @@ This will produce the self-hosted version `zncc.X64`, which you can test by comp
 
 The default settings for now reflect the testing environment (future/integrated versions may detect settings a little better).
 
-More-specific options can be relayed through environment variables. Note that the values are not case-sensitive (but the environment variable names may be, depending on platform):
+More-specific options can be relayed through environment variables:
 
 * The value of `CCB_FAMILY` controls the target architecture:
     * `x86` or `X86` for commonplace Intel/AMD processors used in most PCs/laptops (currently only supported in 64-bit mode)
