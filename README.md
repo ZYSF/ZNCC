@@ -15,13 +15,13 @@ The compiler mostly targets modern, 64-bit platforms and focuses on converting s
 
 ### Command-Line Build (Linux/Unix/bash/...)
 
-Using your host C compiler:
+Using your default host C compiler (Unix-like best practices):
 
     cc -ozncc zncc.c
 
-Using your host C compiler:
+Or specifically using GCC or similar:
 
-    cc -ozncc zncc.c
+    gcc -ozncc zncc.c
 
 ### Visual Studio IDE Build (Windows)
 
