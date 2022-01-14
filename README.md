@@ -35,10 +35,16 @@ This means that features like integers, functions, structs, arrays, pointers, et
      * Varargs can be declared/called but not unpacked
      * This basically means you need to use a different/standard compiler to build any "printf"-like functions (but you can still access them)
  * Passing structures as arguments or return values of functions will not work
-     * In other words, arguments are considered to be word-sized
+     * In other words, arguments are expected to be either integer/pointer-sized or floating-point values
+     * This may need to be revised in order to target 32-bit platforms properly (which may need to pass around 64-bit integers)
  * String constants with the same text are **not** guaranteed to be `==` at runtime
      * This kind of stuff can generally be done and may sometimes be automatic, but depends on linker features
      * It's generally considered bad practice to rely on this anyway, but may be worth noting
+ * Literals are limited to common forms (e.g. don't expect it to support wide strings or pointers to immediate structs)
+ * There will probably never be any support for bitfields
+ * There is currently no support for C++ style classes/namespaces/templates/..
+     * Some minimal support may be added in the future, but likely not the whole lot
+     * The Objective C-like features will be the main focus for OOP-like extensions in the short term
 
 ### Bonus Bugs & Temporary Limitations
 
