@@ -124,7 +124,7 @@ This means that features like integers, functions, structs, arrays, pointers, et
  * String constants with the same text are **not** guaranteed to be `==` at runtime
      * This kind of stuff can generally be done and may sometimes be automatic, but depends on linker features
      * It's generally considered bad practice to rely on this anyway, but may be worth noting
- * Literals are limited to common forms (e.g. don't expect it to support wide strings or pointers to immediate structs)
+ * Literals are limited to common forms (e.g. don't expect it to support wide strings or pointers to struct literals)
  * There will probably never be any support for bitfields
  * There is currently no support for C++ style classes/namespaces/templates/..
      * Some minimal support may be added in the future, but likely not the whole lot
