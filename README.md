@@ -11,6 +11,22 @@ This is NOT meant to be a full replacement for standards-compliant C/C++ compile
 
 The compiler mostly targets modern, 64-bit platforms and focuses on converting simple pre-processed C-like code into simple assembler code for the target architecture. It can be easily adapted for other use-cases or bundled with additional tools.
 
+## Major Features
+
+* Supports multiple architectures and is easy to retarget
+    * Mostly tested on x86-64/AMD64 Linux
+    * Partial support for Windows ABI
+    * RV64 is mostly-supported, with minimal support for RV32 (enough for "Hello world")
+    * Linux targets should also work for FreeBSD/OpenBSD/Solaris/etc. with minimal re-tooling (macOS may require a little more work, but not much)
+    * Also includes some minimal/experimental support for other/new architectures
+* Single compiler tool supports multiple targets (no need for per-architecture compiler builds)
+* Compiler is mostly self-hosting (at least on fully-supported targets)
+* Supports most (not all) essential C features with some extensions
+    * Includes some Objective C-like OOP extensions
+    * Basic floating-point support is included (assuming the target has such support)
+
+NOTE: More detailed language & design features are covered in their own sections.
+
 ## Building & Usage
 
 ### Command-Line Build (Linux/Unix/bash/...)
@@ -64,19 +80,34 @@ This will produce the self-hosted version `zncc.X64`, which you can test by comp
     ./zncc.X64 --input zncc.X64.c --output zncc.X64.again.s
     gcc -static -ozncc.X64.again zncc.X64.again.s
 
-## Features
+### Target Options
 
-* Supports multiple architectures and is easy to retarget
-    * Mostly tested on x86-64/AMD64 Linux
-    * Partial support for Windows ABI
-    * RV64 is mostly-supported, with minimal support for RV32 (enough for "Hello world")
-    * Linux targets should also work for FreeBSD/OpenBSD/Solaris/etc. with minimal re-tooling (macOS may require a little more work, but not much)
-    * Also includes some minimal/experimental support for other/new architectures
-* Single compiler tool supports multiple targets (no need for per-architecture compiler builds)
-* Compiler is mostly self-hosting (at least on fully-supported targets)
-* Supports most (not all) essential C features with some extensions
-    * Includes some Objective C-like OOP extensions
-    * Basic floating-point support is included (assuming the target has such support)
+The default settings for now reflect the testing environment (future/integrated versions may detect settings a little better).
+
+More-specific options can be relayed through environment variables. Note that the values are not case-sensitive (but the environment variable names may be, depending on platform):
+
+* The value of `CCB_FAMILY` controls the target architecture:
+    * `x86` or `X86` for commonplace Intel/AMD processors used in most PCs/laptops (currently only supported in 64-bit mode)
+    * `risc-v`/`RISC-V`/`riscv`/`RISCV` for RISC-V (RV32/RV64-based) or compatible targets
+    * `arm` or `ARM` for ARM-based targets (currently mostly unimplemented)
+    * Potentially other/experimental settings
+* The value of `CCB_WORDSIZE` specifies the basic word-size of the target processor:
+    * Only the value of `64` fully works at the moment (to target 64-bit PCs and RV64)
+    * The value of `32` can be used to test the RV32 target (which is less complete than the 64-bit modes)
+    * The value of `16` is also recognised but there are no 16-bit targets at this stage
+* The value of `CCB_CALLCONV` controls the default calling conventions:
+    * `standard` or `STANDARD` generally implies the "System V" or similar conventions used by Linux/BSD/Solaris systems
+    * `windows` or `WINDOWS` specifies Microsoft Windows (or ReactOS/WINE) conventions
+    * Note that there is some support for specifying calling conventions on a function-by-function basis, but this isn't fully fleshed-out
+* The value of `CCB_ASMFMT` controls the assembler format:
+    * `gas` is often most useful on Linux/similar systems, and conforms to GNU/GCC's default assembler syntax
+    * `fasm` generates code for Flat Assembler which works on x86 systems: https://flatassembler.net/ (this may also be useful for porting to NASM & other targets)
+    * `raw` uses a simplified syntax, i.e. for testing new targets without good/standard assemblers (this is mostly useless for PC & RISC-V targets for now)
+* The value of `CCB_BINFMT` controls the binary format or linker semantics assumed in the assembler code:
+    * `elf` is generally the default on modern Linux/BSD/Solaris systems, and is ideal for linking with GCC/clang code on those platforms
+    * `flat` can be used for producing small "flat binary" code snippets, particularly with Flat Assembler
+
+NOTE: These names reflect internal naming (CCB being short for "C-like Compiler Backend") will be updated before the final release.
 
 ## Language Features & Limitations
 
