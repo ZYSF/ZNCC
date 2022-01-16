@@ -480,6 +480,10 @@ void ccb_target_gen_emit_impl(ccb_t* ccb, int line, const char* fmt, ...) {
     if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_GENERIC || ccb_target_asmfmt(ccb) == CCB_TARGET_ASMFMT_FASM) {
         fprintf(ccb->output, "%*c % 4d %d\n", col, ';', line, ccb_target_gen_stack);
     }
+    else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_ARM) {
+        // 32-bit: fprintf(ccb->output, "%*c % 4d %d\n", col, '@', line, ccb_target_gen_stack);
+        fprintf(ccb->output, " // %d %d\n", line, ccb_target_gen_stack);
+    }
     else {
         fprintf(ccb->output, "%*c % 4d %d\n", col, '#', line, ccb_target_gen_stack);
     }
