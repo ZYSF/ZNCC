@@ -2797,7 +2797,9 @@ char* ccb_ast_label(ccb_t* ccb) {
         }
     }
     else {
-        ccb_string_catf(string, ".L%d", ccb_ast_label_index++);
+        //ccb_string_catf(string, ".L%d", ccb_ast_label_index++);
+        ccb_string_catcstr(string, ".L");
+        ccb_string_catint(string, ccb_ast_label_index++);
     }
     return ccb_string_buffer(string);
 }
