@@ -1294,10 +1294,10 @@ static void ccb_target_gen_comparision(ccb_t* ccb, char* operation, ccb_ast_t* a
             } else if (ccb_strcasecmp(operation, "setg") == 0) {
                 ccb_target_gen_emit("slt a0, a0, a1");
             } else if (ccb_strcasecmp(operation, "setle") == 0) {
-                ccb_target_gen_emit("slt a0, a1, a0");
-                ccb_target_gen_emit("xori a0, a0, 1");
-            } else if (ccb_strcasecmp(operation, "setge") == 0) {
                 ccb_target_gen_emit("slt a0, a0, a1");
+                ccb_target_gen_emit("xori a0, a0, 1"); // XXX TODO PRObLEMATIC...
+            } else if (ccb_strcasecmp(operation, "setge") == 0) {
+                ccb_target_gen_emit("slt a0, a1, a0");
                 ccb_target_gen_emit("xori a0, a0, 1");
             } else if (ccb_strcasecmp(operation, "sete") == 0) {
                 ccb_target_gen_emit("xor a0, a0, a1");
@@ -1391,7 +1391,10 @@ static void ccb_target_gen_binary_arithmetic_integer(ccb_t* ccb, ccb_ast_t* ast)
             ccb_target_gen_emit("div r0, r2, r1");
         }
         else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
-            ccb_target_gen_emit("%s a0, a2, a1", ast->type == '%' ? "rem" : "div");
+            ccb_target_gen_emit("%s a0, a0, a1", ast->type == '%' ? "rem" : "div");
+            //if (ast->type != '%'){
+            ccb_target_gen_emit("sext.w a0, a0");
+            //}
         }
         else if (ccb_target_asmfmt(ccb) == CCB_TARGET_ASMFMT_FASM) {
             ccb_target_gen_emit("idiv rcx");
@@ -1688,7 +1691,7 @@ static void ccb_target_gen_emit_prefix(ccb_t* ccb, ccb_ast_t* ast, const char* o
         ccb_target_gen_emit("%src r0, 1", op);
     }
     else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
-        if (ccb_strcasecmp(op, "sub")) {
+        if (ccb_strcasecmp(op, "sub") == 0) {
             ccb_target_gen_emit("addi a0, a0, -1");
         }
         else {
@@ -1711,7 +1714,7 @@ static void ccb_target_gen_emit_postfix(ccb_t* ccb, ccb_ast_t* ast, const char* 
         ccb_target_gen_emit("%src r0, 1", op);
     }
     else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
-        if (ccb_strcasecmp(op, "sub")) {
+        if (ccb_strcasecmp(op, "sub") == 0) {
             ccb_target_gen_emit("addi a0, a0, -1");
         }
         else {
@@ -1744,13 +1747,14 @@ static ccb_list_t* ccb_target_gen_function_argument_types(ccb_t* ccb, ccb_ast_t*
 }
 
 static void ccb_target_gen_je(ccb_t* ccb, const char* label) {
+    // TODO: This should be called ..gen_jz (jump-if-zero)
     if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_GENERIC) {
         ccb_target_gen_emit("comprc r0, 0");
         ccb_target_gen_emit("jumpcifeq %s", label);
     }
     else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
-        ccb_target_gen_emit("addi t0, zero, 0");
-        ccb_target_gen_emit("beq a0, t0, %s", label);
+        //ccb_target_gen_emit("addi t0, zero, 0");
+        ccb_target_gen_emit("beq a0, zero, %s", label);
     }
     else if (ccb_target_asmfmt(ccb) == CCB_TARGET_ASMFMT_FASM) {
         ccb_target_gen_emit("test rax, rax");
@@ -1835,8 +1839,9 @@ static void ccb_target_gen_expression(ccb_t* ccb, ccb_ast_t* ast) {
             }
             else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
                 //ccb_target_gen_emit("addi a0, zero, %d", ast->integer); // TODO: Sizing
-                ccb_target_gen_emit("lui a0, %%hi(%d)", ast->integer); // TODO: Sizing
-                ccb_target_gen_emit("addi a0, a0, %%lo(%d)", ast->integer); // TODO: Sizing
+                //ccb_target_gen_emit("lui a0, %%hi(%d)", ast->integer); // TODO: Sizing
+                //ccb_target_gen_emit("addi a0, a0, %%lo(%d)", ast->integer); // TODO: Sizing
+                ccb_target_gen_emit("li a0, %d", ast->integer); // TODO: Sizing
             }
             else if (ccb_target_asmfmt(ccb) == CCB_TARGET_ASMFMT_FASM) {
                 ccb_target_gen_emit("mov rax, %d", ast->integer);
@@ -1889,9 +1894,9 @@ static void ccb_target_gen_expression(ccb_t* ccb, ccb_ast_t* ast) {
                 ccb_target_gen_emit("todo");
             }
             else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
-                //ccb_target_gen_emit("li t0, %s", ast->floating.label);
-                ccb_target_gen_emit("lui t0, %%hi(%s)", ast->floating.label);
-                ccb_target_gen_emit("addi t0, t0, %%lo(%s)", ast->floating.label);
+                ccb_target_gen_emit("la t0, %s", ast->floating.label);
+                //ccb_target_gen_emit("lui t0, %%hi(%s)", ast->floating.label);
+                //ccb_target_gen_emit("addi t0, t0, %%lo(%s)", ast->floating.label);
                 ccb_target_gen_emit("fld fa0, 0(t0)");
             }
             else if (ccb_target_asmfmt(ccb) == CCB_TARGET_ASMFMT_FASM) {
@@ -1915,8 +1920,9 @@ static void ccb_target_gen_expression(ccb_t* ccb, ccb_ast_t* ast) {
             ccb_target_gen_emit("todo");
         }
         else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
-            ccb_target_gen_emit("lui a0, %%hi(%s)", ast->string.label);
-            ccb_target_gen_emit("addi a0, a0, %%lo(%s)", ast->string.label);
+            //ccb_target_gen_emit("lui a0, %%hi(%s)", ast->string.label);
+            //ccb_target_gen_emit("addi a0, a0, %%lo(%s)", ast->string.label);
+            ccb_target_gen_emit("la a0, %s", ast->string.label);
         }
         else if (ccb_target_asmfmt(ccb) == CCB_TARGET_ASMFMT_FASM) {
             ccb_target_gen_emit("lea rax, [%s] ; TODO: Offset from RIP explicitly?", ast->string.label);
@@ -2231,8 +2237,9 @@ static void ccb_target_gen_expression(ccb_t* ccb, ccb_ast_t* ast) {
                 ccb_target_gen_emit("setrc r0, %s", ast->unary.operand->function.name);
             }
             else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
-                ccb_target_gen_emit("lui a0, %%hi(%s)", ast->unary.operand->function.name);
-                ccb_target_gen_emit("addi a0, a0, %%lo(%s)", ast->unary.operand->function.name);
+                //ccb_target_gen_emit("lui a0, %%hi(%s)", ast->unary.operand->function.name);
+                //ccb_target_gen_emit("addi a0, a0, %%lo(%s)", ast->unary.operand->function.name);
+                ccb_target_gen_emit("la a0, %s", ast->unary.operand->function.name);
             }
             else if (ccb_target_asmfmt(ccb) == CCB_TARGET_ASMFMT_FASM) {
                 ccb_target_gen_emit("lea rax, [%s]", ast->unary.operand->function.name);
@@ -2266,8 +2273,9 @@ static void ccb_target_gen_expression(ccb_t* ccb, ccb_ast_t* ast) {
                 ccb_target_gen_emit("lea rax, [%s]", ast->unary.operand->variable.label);
             }
             else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
-                ccb_target_gen_emit("lui a0, %%hi(%s)", ast->unary.operand->variable.label);
-                ccb_target_gen_emit("addi a0, a0, %%lo(%s)", ast->unary.operand->variable.label);
+                //ccb_target_gen_emit("lui a0, %%hi(%s)", ast->unary.operand->variable.label);
+                //ccb_target_gen_emit("addi a0, a0, %%lo(%s)", ast->unary.operand->variable.label);
+                ccb_target_gen_emit("la a0, %s", ast->unary.operand->variable.label);
             }
             else {
                 ccb_target_gen_emit("lea %s(%%rip), %%rax", ast->unary.operand->variable.label);
