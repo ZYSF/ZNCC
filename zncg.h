@@ -2516,8 +2516,9 @@ static void ccb_target_gen_expression(ccb_t* ccb, ccb_ast_t* ast) {
             ccb_target_gen_emit("setrflageq r0");
         }
         else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
-            ccb_target_gen_emit("not a0, a0");
-            ccb_target_gen_emit("andi a0, a0, 1");
+            //ccb_target_gen_emit("not a0, a0");
+            //ccb_target_gen_emit("andi a0, a0, 1");
+            ccb_target_gen_emit("seqz a0, a0");
         }
         else if (ccb_target_asmfmt(ccb) == CCB_TARGET_ASMFMT_FASM) {
             ccb_target_gen_emit("cmp rax, 0");
