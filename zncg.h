@@ -1340,7 +1340,7 @@ static void ccb_target_gen_binary_arithmetic_integer(ccb_t* ccb, ccb_ast_t* ast)
     case '-':             op = (ccb_target_family(ccb) == CCB_ARCH_FAMILY_GENERIC ? "subrr" : "sub");  break;
     case '*':             op = (ccb_target_family(ccb) == CCB_ARCH_FAMILY_GENERIC ? "mulrr" : (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV ? "mul" : "imul")); break;
     case '^':             op = (ccb_target_family(ccb) == CCB_ARCH_FAMILY_GENERIC ? "xorrr" : "xor");  break;
-    case CCB_AST_TYPE_LSHIFT: op = (ccb_target_family(ccb) == CCB_ARCH_FAMILY_GENERIC ? "shlrr" : (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV ? "sla" : "sal"));  break;
+    case CCB_AST_TYPE_LSHIFT: op = (ccb_target_family(ccb) == CCB_ARCH_FAMILY_GENERIC ? "shlrr" : (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV ? /*"sla"*/ "sll" : "sal"));  break;
     case CCB_AST_TYPE_RSHIFT: op = (ccb_target_family(ccb) == CCB_ARCH_FAMILY_GENERIC ? "shrrr" : (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV ? "sra" :"sar")); break; // TODO: Unsigned variant?
     case '/':
     case '%':
@@ -1834,7 +1834,9 @@ static void ccb_target_gen_expression(ccb_t* ccb, ccb_ast_t* ast) {
                 ccb_target_gen_emit("addimm $r0, $r0, %d", ast->integer); // TODO: Sizing
             }
             else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
-                ccb_target_gen_emit("addi a0, zero, %d", ast->integer); // TODO: Sizing
+                //ccb_target_gen_emit("addi a0, zero, %d", ast->integer); // TODO: Sizing
+                ccb_target_gen_emit("lui a0, %%hi(%d)", ast->integer); // TODO: Sizing
+                ccb_target_gen_emit("addi a0, a0, %%lo(%d)", ast->integer); // TODO: Sizing
             }
             else if (ccb_target_asmfmt(ccb) == CCB_TARGET_ASMFMT_FASM) {
                 ccb_target_gen_emit("mov rax, %d", ast->integer);
@@ -1865,7 +1867,7 @@ static void ccb_target_gen_expression(ccb_t* ccb, ccb_ast_t* ast) {
             }
             else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
                 unsigned long long tmp = ast->integer; /* TODO: Casts in function calls? */
-                ccb_target_gen_emit("addi a0, zero, %ll", tmp); // TODO: Sizing
+                ccb_target_gen_emit("addi a0, zero, %lld", tmp); // TODO: Sizing
             }
             else if (ccb_target_asmfmt(ccb) == CCB_TARGET_ASMFMT_FASM) {
                 long long tmp = ast->integer; /* TODO: Casts in function calls? */
@@ -1887,7 +1889,9 @@ static void ccb_target_gen_expression(ccb_t* ccb, ccb_ast_t* ast) {
                 ccb_target_gen_emit("todo");
             }
             else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
-                ccb_target_gen_emit("li t0, %s", ast->floating.label);
+                //ccb_target_gen_emit("li t0, %s", ast->floating.label);
+                ccb_target_gen_emit("lui t0, %%hi(%s)", ast->floating.label);
+                ccb_target_gen_emit("addi t0, t0, %%lo(%s)", ast->floating.label);
                 ccb_target_gen_emit("fld fa0, 0(t0)");
             }
             else if (ccb_target_asmfmt(ccb) == CCB_TARGET_ASMFMT_FASM) {
