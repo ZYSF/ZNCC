@@ -699,7 +699,8 @@ static void ccb_target_gen_load_global(ccb_t* ccb, ccb_data_type_t* type, char* 
                 ccb_target_gen_emit("addimm $r0, (%s + %d)", label, offset);
             }
             else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
-                ccb_target_gen_emit("addi a0, zero, %s", label); // TODO: Use lui here?
+                //ccb_target_gen_emit("addi a0, zero, %s", label); // TODO: Use lui here?
+                ccb_target_gen_emit("la a0, %s", label);
                 ccb_target_gen_emit("addi a0, a0, %d", offset);
             }
             else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_GENERIC) {
@@ -722,7 +723,8 @@ static void ccb_target_gen_load_global(ccb_t* ccb, ccb_data_type_t* type, char* 
                 ccb_target_gen_emit("setrc r0, %s", label);
             }
             else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
-                ccb_target_gen_emit("addi a0, zero, %s", label); // TODO: Use lui here?
+                //ccb_target_gen_emit("addi a0, zero, %s", label); // TODO: Use lui here?
+                ccb_target_gen_emit("la a0, %s", label); // TODO: Use lui here?
             }
             else if (ccb_target_asmfmt(ccb) == CCB_TARGET_ASMFMT_FASM) {
                 ccb_target_gen_emit("lea rax, [%s]", label);
@@ -777,8 +779,10 @@ static void ccb_target_gen_load_global(ccb_t* ccb, ccb_data_type_t* type, char* 
                 ccb_target_gen_emit("setrcpcm %s, %s, %d", reg, label, offset);
             }
             if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
-                ccb_target_gen_emit("addi t0, zero, %s", label); // TODO: Use lui? Better temporary register?
-                ccb_target_gen_emit("ld %s, t0, %d", reg, offset);
+                //ccb_target_gen_emit("addi t0, zero, %s", label); // TODO: Use lui? Better temporary register?
+                ccb_target_gen_emit("la t0, %s", label); // TODO: Use lui? Better temporary register?
+                //ccb_target_gen_emit("ld %s, t0, %d", reg, offset);
+                ccb_target_gen_emit("ld %s, %d(t0)", reg, offset);
             }
             else if (ccb_target_asmfmt(ccb) == CCB_TARGET_ASMFMT_FASM) {
                 ccb_target_gen_emit("mov %s, [%s + %d]", reg, label, offset);
@@ -792,8 +796,10 @@ static void ccb_target_gen_load_global(ccb_t* ccb, ccb_data_type_t* type, char* 
                 ccb_target_gen_emit("setrcm %s, %s", reg, label);
             }
             else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
-                ccb_target_gen_emit("addi t0, zero, %s", label); // TODO: Use lui? Better temporary register?
-                ccb_target_gen_emit("ld %s, t0, 0", reg);
+                //ccb_target_gen_emit("addi t0, zero, %s", label); // TODO: Use lui? Better temporary register?
+                ccb_target_gen_emit("la t0, %s", label); // TODO: Use lui? Better temporary register?
+                //ccb_target_gen_emit("ld %s, t0, 0", reg);
+                ccb_target_gen_emit("ld %s, 0(t0)", reg);
             }
             else if (ccb_target_asmfmt(ccb) == CCB_TARGET_ASMFMT_FASM) {
                 ccb_target_gen_emit("mov %s, [%s]", reg, label);
@@ -969,7 +975,8 @@ static void ccb_target_gen_save_global(ccb_t* ccb, char* name, ccb_data_type_t* 
             ccb_target_gen_emit("setrpcmr %s, %d, %s", name, offset, reg);
         }
         else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
-            ccb_target_gen_emit("addi t0, zero, %s", name); // TODO: lui?
+            //ccb_target_gen_emit("addi t0, zero, %s", name); // TODO: lui?
+            ccb_target_gen_emit("la t0, %s", name);
             ccb_target_gen_emit("sd %s, %d(t0)", reg, offset);
         }
         else if (ccb_target_asmfmt(ccb) == CCB_TARGET_ASMFMT_FASM) {
@@ -984,7 +991,8 @@ static void ccb_target_gen_save_global(ccb_t* ccb, char* name, ccb_data_type_t* 
             ccb_target_gen_emit("setcmr %s, %s", name, reg);
         }
         else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
-            ccb_target_gen_emit("addi t0, zero, %s", name); // TODO: lui?
+            //ccb_target_gen_emit("addi t0, zero, %s", name); // TODO: lui?
+            ccb_target_gen_emit("la t0, %s", name); // TODO: lui?
             ccb_target_gen_emit("sd %s, 0(t0)", reg);
         }
         else if (ccb_target_asmfmt(ccb) == CCB_TARGET_ASMFMT_FASM) {
@@ -1126,7 +1134,8 @@ static void ccb_target_gen_pointer_arithmetic(ccb_t* ccb, char op, ccb_ast_t* le
                 ccb_target_gen_emit("slli a0, a0, %d", (size == 2) ? 1 : ((size == 4) ? 2 : 3));
             }
             else {
-                ccb_target_gen_emit("addi a1, zero, %d", size);
+                //ccb_target_gen_emit("addi a1, zero, %d", size);
+                ccb_target_gen_emit("li a1, %d", size);
                 ccb_target_gen_emit("mul a0, a0, a1");
             }
         }
@@ -1524,7 +1533,7 @@ static void ccb_target_gen_save(ccb_t* ccb, ccb_data_type_t* to, ccb_data_type_t
             ccb_target_gen_emit("floatr f0, r0");
         }
         else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
-            ccb_target_gen_emit("fcvt.d.i fa0, fa0");
+            ccb_target_gen_emit("fcvt.d.l fa0, a0"); // NOTE: .i on 32-bit?
         }
         else if (ccb_target_asmfmt(ccb) == CCB_TARGET_ASMFMT_FASM) {
             ccb_target_gen_emit("cvtsi2sd xmm0, eax");
@@ -1568,7 +1577,8 @@ static void ccb_target_gen_literal_save(ccb_t* ccb, ccb_ast_t* ast, ccb_data_typ
             ccb_target_gen_emit("setrpcmcx8 r5, %d, %d", offset, ast->integer);
         }
         else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
-            ccb_target_gen_emit("addi t0, zero, %d", ast->integer);
+            //ccb_target_gen_emit("addi t0, zero, %d", ast->integer);
+            ccb_target_gen_emit("li t0, %d", ast->integer);
             //ccb_target_gen_emit("sb t0, %d(fp)", offset);
             ccb_target_gen_emit("sb t0, %d(x8)", offset);
         }
@@ -1585,7 +1595,8 @@ static void ccb_target_gen_literal_save(ccb_t* ccb, ccb_ast_t* ast, ccb_data_typ
             ccb_target_gen_emit("setrpcmcx16 r5, %d, %d", offset, ast->integer);
         }
         else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
-            ccb_target_gen_emit("addi t0, zero, %d", ast->integer);
+            //ccb_target_gen_emit("addi t0, zero, %d", ast->integer);
+            ccb_target_gen_emit("li t0, %d", ast->integer);
             //ccb_target_gen_emit("sh t0, %d(fp)", offset);
             ccb_target_gen_emit("sh t0, %d(x8)", offset);
         }
@@ -1602,7 +1613,8 @@ static void ccb_target_gen_literal_save(ccb_t* ccb, ccb_ast_t* ast, ccb_data_typ
             ccb_target_gen_emit("setrpcmcx32 r5, %d, %d", offset, ast->integer);
         }
         else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
-            ccb_target_gen_emit("addi t0, zero, %d", ast->integer);
+            //ccb_target_gen_emit("addi t0, zero, %d", ast->integer);
+            ccb_target_gen_emit("li t0, %d", ast->integer);
             //ccb_target_gen_emit("sw t0, %d(fp)", offset);
             ccb_target_gen_emit("sw t0, %d(x8)", offset);
         }
@@ -1625,7 +1637,8 @@ static void ccb_target_gen_literal_save(ccb_t* ccb, ccb_ast_t* ast, ccb_data_typ
         }
         else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
             unsigned long long tmp = ast->integer; /* TODO: Casts in function calls? */
-            ccb_target_gen_emit("addi t0, zero, %d", tmp); // TODO: Handle larger literals!
+            //ccb_target_gen_emit("addi t0, zero, %d", tmp); // TODO: Handle larger literals!
+            ccb_target_gen_emit("li t0, %d", tmp); // TODO: Handle larger literals!
             //ccb_target_gen_emit("sd t0, %d(fp)", offset);
             ccb_target_gen_emit("sd t0, %d(x8)", offset);
         }
@@ -1647,12 +1660,12 @@ static void ccb_target_gen_literal_save(ccb_t* ccb, ccb_ast_t* ast, ccb_data_typ
         ccb_target_gen_push(ccb_target_r0(ccb));
         if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_GENERIC) {
             double tmp = ast->floating.value; // TODO: Allow getting address of struct member
-            ccb_target_gen_emit("setrc rax, %ulld", *((unsigned long long*) &tmp));
+            ccb_target_gen_emit("setrc rax, %llu", *((unsigned long long*) &tmp));
             ccb_target_gen_emit("setrpcmr r5, %d, r0", offset);
         }
         else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
             double tmp = ast->floating.value; // TODO: Allow getting address of struct member
-            ccb_target_gen_emit("li a0, %ulld", *((unsigned long long*) & tmp));
+            ccb_target_gen_emit("li a0, %llu", *((unsigned long long*) & tmp));
             ccb_target_gen_emit("fmv.d.x fa0, a0");
         }
         else if (ccb_target_asmfmt(ccb) == CCB_TARGET_ASMFMT_FASM) {
@@ -1872,7 +1885,8 @@ static void ccb_target_gen_expression(ccb_t* ccb, ccb_ast_t* ast) {
             }
             else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
                 unsigned long long tmp = ast->integer; /* TODO: Casts in function calls? */
-                ccb_target_gen_emit("addi a0, zero, %lld", tmp); // TODO: Sizing
+                //ccb_target_gen_emit("addi a0, zero, %lld", tmp); // TODO: Sizing
+                ccb_target_gen_emit("li a0, %lld", tmp); // TODO: Sizing
             }
             else if (ccb_target_asmfmt(ccb) == CCB_TARGET_ASMFMT_FASM) {
                 long long tmp = ast->integer; /* TODO: Casts in function calls? */
@@ -2408,7 +2422,8 @@ static void ccb_target_gen_expression(ccb_t* ccb, ccb_ast_t* ast) {
             ccb_target_gen_emit("comprr r0, %d", ast->casevalue); // TODO: Is this the right ordering??
         }
         else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
-            ccb_target_gen_emit("addi a1, zero, %d", ast->casevalue);
+            //ccb_target_gen_emit("addi a1, zero, %d", ast->casevalue);
+            ccb_target_gen_emit("li a1, %d", ast->casevalue);
         }
         else if (ccb_target_asmfmt(ccb) == CCB_TARGET_ASMFMT_FASM) {
             ccb_target_gen_emit("cmp eax, %d", ast->casevalue);
