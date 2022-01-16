@@ -16,7 +16,7 @@ The compiler mostly targets modern, 64-bit platforms and focuses on converting s
 * Supports multiple architectures and is easy to retarget
     * Mostly tested on x86-64/AMD64 Linux
     * Partial support for Windows ABI
-    * RV64 is mostly-supported, with minimal support for RV32 (enough for "Hello world")
+    * RV64 is about half-supported (basic tests work but there are many broken bits), with minimal support for RV32 (enough for "Hello world")
     * Linux targets should also work for FreeBSD/OpenBSD/Solaris/etc. with minimal re-tooling (macOS may require a little more work, but not much)
     * Also includes some minimal/experimental support for other/new architectures
 * Single compiler tool supports multiple targets (no need for per-architecture compiler builds)
