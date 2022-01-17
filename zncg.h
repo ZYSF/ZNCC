@@ -1,6 +1,7 @@
 #ifndef CCBGENERIC_H
 #define CCBGENERIC_H
 
+// TODO: Make the parser header consistent with my git version
 #include "ccb.h"
 
 #ifdef CCBGENERIC_IMPLEMENTATION
@@ -196,7 +197,7 @@ int ccb_target_callregisters(ccb_t* ccb) {
 	case CCB_ARCH_FAMILY_X86:
 		return (ccb_target_callconv(ccb) == CCB_TARGET_CALLCONV_WINDOWS) ? 4 : 6; // TODO: This only applies to 64-bit mode
 	case CCB_ARCH_FAMILY_ARM:
-		return 4; // TODO: This might only apply to 32-bit mode
+		return 8; // TODO: ARM only has 4 on 32-bit targets
 	case CCB_ARCH_FAMILY_RISCV:
 		return 8; // Pretty sure this is the same for all RISC-V ISAs
 	case CCB_ARCH_FAMILY_GENERIC:
@@ -248,13 +249,21 @@ const char* ccb_target_callregister(ccb_t* ccb, int idx) {
 	case CCB_ARCH_FAMILY_ARM:
 		switch (idx) {
 		case 0:
-			return "r0";
+			return "x0";
 		case 1:
-			return "r1";
+			return "x1";
 		case 2:
-			return "r2";
+			return "x2";
 		case 3:
-			return "r3";
+			return "x3";
+		case 4:
+			return "x4";
+		case 5:
+			return "x5";
+		case 6:
+			return "x6";
+		case 7:
+			return "x7";
 		}
         ccb_compile_error(ccb, "Target Error: Register lookup failed");
 	case CCB_ARCH_FAMILY_RISCV:
@@ -322,6 +331,8 @@ const char* ccb_target_r0(ccb_t* ccb) {
         return "r0";
     case CCB_ARCH_FAMILY_RISCV:
         return "a0";
+    case CCB_ARCH_FAMILY_ARM:
+        return "x0";
 	default:
 		return "todo";
 	}
@@ -337,6 +348,8 @@ const char* ccb_target_r1(ccb_t* ccb) {
         return "r1";
     case CCB_ARCH_FAMILY_RISCV:
         return "a1";
+    case CCB_ARCH_FAMILY_ARM:
+        return "x1";
 	default:
 		return "todo";
 	}
@@ -547,6 +560,13 @@ static void ccb_target_gen_push_(ccb_t* ccb, const char* reg, int line) {
             ccb_target_gen_emit_impl(ccb, line, "\tsd %s, 0(sp)", reg);
         }
     }
+    else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_ARM) {
+        // TODO: Optimise ARM64 stack operations
+        // (for some horrible reason, you can't use SP as a simple word-sized stack :s)
+        // For details: https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/using-the-stack-in-aarch64-implementing-push-and-pop
+        ccb_target_gen_emit_impl(ccb, line, "\tstr   %s, [sp, #-16]", reg);
+        ccb_target_gen_stack += (ccb_target_wordsize(ccb)/8);
+    }
     else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_GENERIC) {
         ccb_target_gen_emit_impl(ccb, line, "\tpushr %s", reg);
     }
@@ -586,6 +606,12 @@ static void ccb_target_gen_pop_(ccb_t* ccb, const char* reg, int line) {
             ccb_target_gen_emit_impl(ccb, line, "\tld %s, 0(sp)", reg);
             ccb_target_gen_emit_impl(ccb, line, "\taddi sp, sp, 8");
         }
+    }
+    else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_ARM) {
+        // TODO: Optimise ARM64 stack operations
+        // (for some horrible reason, you can't use SP as a simple word-sized stack :s)
+        ccb_target_gen_emit_impl(ccb, line, "\tldr   %s, [sp], #16", reg);
+        ccb_target_gen_stack -= (ccb_target_wordsize(ccb)/8);
     }
     else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_GENERIC) {
         ccb_target_gen_emit_impl(ccb, line, "\tpopr %s", reg);
@@ -1860,6 +1886,9 @@ static void ccb_target_gen_expression(ccb_t* ccb, ccb_ast_t* ast) {
                 //ccb_target_gen_emit("addi a0, a0, %%lo(%d)", ast->integer); // TODO: Sizing
                 ccb_target_gen_emit("li a0, %d", ast->integer); // TODO: Sizing
             }
+            else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_ARM) {
+                ccb_target_gen_emit("ldr x0, =%d", ast->integer); // TODO: Sizing
+            }
             else if (ccb_target_asmfmt(ccb) == CCB_TARGET_ASMFMT_FASM) {
                 ccb_target_gen_emit("mov rax, %d", ast->integer);
             }
@@ -1941,6 +1970,9 @@ static void ccb_target_gen_expression(ccb_t* ccb, ccb_ast_t* ast) {
             //ccb_target_gen_emit("lui a0, %%hi(%s)", ast->string.label);
             //ccb_target_gen_emit("addi a0, a0, %%lo(%s)", ast->string.label);
             ccb_target_gen_emit("la a0, %s", ast->string.label);
+        }
+        else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_ARM) {
+            ccb_target_gen_emit("ldr x0, =%s", ast->string.label);
         }
         else if (ccb_target_asmfmt(ccb) == CCB_TARGET_ASMFMT_FASM) {
             ccb_target_gen_emit("lea rax, [%s] ; TODO: Offset from RIP explicitly?", ast->string.label);
@@ -2093,6 +2125,9 @@ static void ccb_target_gen_expression(ccb_t* ccb, ccb_ast_t* ast) {
         else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
             //ccb_target_gen_emit("addi a0, zero, %d", regx);
         }
+        else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_ARM) {
+            //ccb_target_gen_emit("addi a0, zero, %d", regx);
+        }
         else if (ccb_target_asmfmt(ccb) == CCB_TARGET_ASMFMT_FASM) {
             ccb_target_gen_emit("mov eax, %d", regx); // TODO: Should this  be rax??
         }
@@ -2140,6 +2175,9 @@ static void ccb_target_gen_expression(ccb_t* ccb, ccb_ast_t* ast) {
             }
             else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
                 ccb_target_gen_emit("call %s", ast->function.name);
+            }
+            else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_ARM) {
+                ccb_target_gen_emit("bl %s", ast->function.name);
             }
             else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_X86 && ccb_target_asmfmt(ccb) == CCB_TARGET_ASMFMT_RAW) {
                 tmpintctr++;
@@ -2492,6 +2530,11 @@ static void ccb_target_gen_expression(ccb_t* ccb, ccb_ast_t* ast) {
             ccb_target_gen_emit("addi sp, x8, 0");
             ccb_target_gen_pop(ccb_target_bp(ccb));
             ccb_target_gen_pop("ra");
+            ccb_target_gen_emit("ret");
+        }
+        else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_ARM) {
+            ccb_target_gen_emit("ldp x29, x30, [sp]");
+            ccb_target_gen_emit("add sp, sp, 16");
             ccb_target_gen_emit("ret");
         }
         else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_X86 && ccb_target_asmfmt(ccb) == CCB_TARGET_ASMFMT_RAW) {
@@ -3076,12 +3119,18 @@ static void ccb_target_gen_function_prologue(ccb_t* ccb, ccb_ast_t* ast) {
 
     if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_X86 && ccb_target_asmfmt(ccb) == CCB_TARGET_ASMFMT_RAW) {
         ccb_target_gen_emit("data8 0x55 ; push rbp");
-    }
-    else {
+    } else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_ARM) {
+        // We use an optimised approach for ARM (this should push bot )
+        ccb_target_gen_emit("sub sp, sp, 16");
+        ccb_target_gen_emit("stp x29, x30, [sp]");
+        ccb_target_gen_stack -= (ccb_target_wordsize(ccb)/8);
+    } else {
         ccb_target_gen_push(ccb_target_bp(ccb));
     }
 
-    if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
+    if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_ARM) {
+        ccb_target_gen_emit("mov x29, sp");
+    } else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_RISCV) {
         //ccb_target_gen_emit("addi fp, sp, 0");
         ccb_target_gen_emit("addi x8, sp, 0");
     }
@@ -3207,6 +3256,11 @@ static void ccb_target_gen_function_epilogue(ccb_t* ccb) {
         ccb_target_gen_emit("addi sp, x8, 0");
         ccb_target_gen_pop(ccb_target_bp(ccb));
         ccb_target_gen_pop("ra");
+        ccb_target_gen_emit("ret");
+    }
+    else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_ARM) {
+        ccb_target_gen_emit("ldp x29, x30, [sp]");
+        ccb_target_gen_emit("add sp, sp, 16");
         ccb_target_gen_emit("ret");
     }
     else if (ccb_target_family(ccb) == CCB_ARCH_FAMILY_X86 && ccb_target_asmfmt(ccb) == CCB_TARGET_ASMFMT_RAW) {
